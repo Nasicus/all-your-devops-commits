@@ -86,6 +86,8 @@ const App: FC = () => {
 
     if (storePat) {
       localStorage.setItem("pat", pat);
+    } else {
+      localStorage.removeItem("pat");
     }
 
     const result: RepoResult[] = [];
