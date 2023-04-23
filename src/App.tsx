@@ -21,24 +21,27 @@ import {
 
 const App: FC = () => {
   const [user, setUser] = useState("Patrick Zenhäusern");
+  const [filter, setFilterValue] = useState("");
   const [pat, setPat] = useState(() => localStorage.getItem("pat") || "");
   const [storePat, setStorePat] = useState(!!pat);
   const [isSearching, setIsSearching] = useState(false);
   const [repoResults, setRepoResults] = useState<RepoResult[]>([]);
 
   const reposWithoutCommits = repoResults.filter(
-    (r) => r.commmits.values.length <= 0 && r.commmits.errors.length <= 0
-  );
-  const reposWithCommits = repoResults.filter(
-    (r) => r.commmits.values.length > 0
+    (r) => r.commits.values.length <= 0 && r.commits.errors.length <= 0
   );
 
   const reposWithErrors = repoResults.filter(
-    (r) => r.commmits.errors.length > 0
+    (r) => r.commits.errors.length > 0
   );
 
+  const reposWithCommits = repoResults
+    .filter((r) => r.commits.values.length > 0)
+    .map(applyFilter)
+    .filter((r) => !!r);
+
   const allCommits = reposWithCommits.reduce<Commit[]>(
-    (commits, r) => [...commits, ...r.commmits.values],
+    (commits, r) => [...commits, ...r.commits.values],
     []
   );
 
@@ -88,6 +91,13 @@ const App: FC = () => {
             {reposWithCommits.length} repos with {allCommits.length} commits
           </Accordion.Control>
           <Accordion.Panel>
+            <TextInput
+              label="Filter"
+              placeholder="Repo name, commit message or commitId"
+              value={filter}
+              onChange={(e) => setFilterValue(e.target.value)}
+            />
+            <br />
             <BarChart width={730} height={250} data={getCommitsByMonths()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
@@ -101,7 +111,7 @@ const App: FC = () => {
                 <li key={r.name}>
                   <RepoLink repo={r} /> ({r.defaultBranch})
                   <ul>
-                    {r.commmits.values.map((c) => (
+                    {r.commits.values.map((c) => (
                       <li key={c.id}>
                         {c.date.toISOString()}: {c.message} (
                         <a
@@ -131,7 +141,7 @@ const App: FC = () => {
                     <RepoLink repo={r} />
                   </li>
                   <ul>
-                    {r.commmits.errors.map((err, i) => (
+                    {r.commits.errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
                   </ul>
@@ -143,6 +153,36 @@ const App: FC = () => {
       </Accordion>
     </Container>
   );
+
+  function applyFilter(repo: RepoResult): RepoResult | null {
+    if (!filter) {
+      return repo;
+    }
+
+    const lowerFilter = filter.toLowerCase();
+
+    if (repo.name.toLowerCase().includes(lowerFilter)) {
+      return repo;
+    }
+
+    const filteredCommits = repo.commits.values.filter(
+      (c) =>
+        c.id.includes(lowerFilter) ||
+        c.message.toLowerCase().includes(lowerFilter)
+    );
+
+    if (!filteredCommits.length) {
+      return null;
+    }
+
+    return {
+      ...repo,
+      commits: {
+        ...repo.commits,
+        values: filteredCommits,
+      },
+    };
+  }
 
   function getCommitsByMonths() {
     return allCommits
@@ -191,7 +231,7 @@ const App: FC = () => {
       const repoResult: RepoResult = {
         name: repo.name,
         defaultBranch,
-        commmits: { errors: [], values: [] },
+        commits: { errors: [], values: [] },
       };
 
       result.push(repoResult);
@@ -211,15 +251,15 @@ const App: FC = () => {
             date: new Date(c.author.date),
           }));
 
-          repoResult.commmits.values = [
-            ...repoResult.commmits.values,
+          repoResult.commits.values = [
+            ...repoResult.commits.values,
             ...commitPage,
           ];
           skip += pageSize;
           setRepoResults([...result]);
         } catch (err) {
           const r: any = err;
-          repoResult.commmits.errors.push(
+          repoResult.commits.errors.push(
             `${r.status}: ${(await r.json())?.message}`
           );
           setRepoResults([...result]);
@@ -259,7 +299,7 @@ const RepoLink: FC<{ repo: RepoResult }> = ({ repo }) => {
 interface RepoResult {
   name: string;
   defaultBranch: string;
-  commmits: CommitsResult;
+  commits: CommitsResult;
 }
 
 interface CommitsResult {
