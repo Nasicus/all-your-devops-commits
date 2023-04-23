@@ -50,7 +50,7 @@ const App: FC = () => {
         label="Store PAT in local storage"
       />
       <TextInput
-        placeholder="e.g. Patrick Zenhäusern"
+        placeholder="e.g. Josef Müller"
         label="User to search for"
         value={user}
         onChange={(e) => setUser(e.target.value)}
