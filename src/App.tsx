@@ -38,7 +38,8 @@ const App: FC = () => {
   const reposWithCommits = repoResults
     .filter((r) => r.commits.values.length > 0)
     .map(applyFilter)
-    .filter((r) => !!r);
+    .filter((r) => !!r)
+    .map((r) => r as RepoResult);
 
   const allCommits = reposWithCommits.reduce<Commit[]>(
     (commits, r) => [...commits, ...r.commits.values],
@@ -72,20 +73,6 @@ const App: FC = () => {
         {isSearching && <Loader />}
       </Flex>
       <Accordion defaultValue="withCommits">
-        <Accordion.Item value="noCommits">
-          <Accordion.Control>
-            {reposWithoutCommits.length} repos without commits
-          </Accordion.Control>
-          <Accordion.Panel>
-            <ul>
-              {reposWithoutCommits.map((r) => (
-                <li key={r.name}>
-                  <RepoLink repo={r} />
-                </li>
-              ))}
-            </ul>
-          </Accordion.Panel>
-        </Accordion.Item>
         <Accordion.Item value="withCommits">
           <Accordion.Control>
             {reposWithCommits.length} repos with {allCommits.length} commits
@@ -124,6 +111,20 @@ const App: FC = () => {
                       </li>
                     ))}
                   </ul>
+                </li>
+              ))}
+            </ul>
+          </Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item value="noCommits">
+          <Accordion.Control>
+            {reposWithoutCommits.length} repos without commits
+          </Accordion.Control>
+          <Accordion.Panel>
+            <ul>
+              {reposWithoutCommits.map((r) => (
+                <li key={r.name}>
+                  <RepoLink repo={r} />
                 </li>
               ))}
             </ul>
