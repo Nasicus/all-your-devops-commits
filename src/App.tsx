@@ -11,42 +11,14 @@ import {
   Textarea,
 } from "@mantine/core";
 import { FC, Fragment, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 
 const App: FC = () => {
   const [user, setUser] = useState("Patrick Zenhäusern");
-  const [filter, setFilterValue] = useState("");
   const [pat, setPat] = useState(() => localStorage.getItem("pat") || "");
   const [storePat, setStorePat] = useState(!!pat);
   const [isSearching, setIsSearching] = useState(false);
-  const [repoResults, setRepoResults] = useState<RepoResult[]>([]);
-
-  const reposWithoutCommits = repoResults.filter(
-    (r) => r.commits.values.length <= 0 && r.commits.errors.length <= 0
-  );
-
-  const reposWithErrors = repoResults.filter(
-    (r) => r.commits.errors.length > 0
-  );
-
-  const reposWithCommits = repoResults
-    .filter((r) => r.commits.values.length > 0)
-    .map(applyFilter)
-    .filter((r) => !!r)
-    .map((r) => r as RepoResult);
-
-  const allCommits = reposWithCommits.reduce<Commit[]>(
-    (commits, r) => [...commits, ...r.commits.values],
-    []
-  );
+  const [repoResults, setRepoResults] = useState<RepoResult[]>(null);
 
   return (
     <Container>
@@ -74,167 +46,9 @@ const App: FC = () => {
         </Button>
         {isSearching && <Loader />}
       </Flex>
-      <Accordion defaultValue="withCommits">
-        <Accordion.Item value="withCommits">
-          <Accordion.Control>
-            {reposWithCommits.length} repos with {allCommits.length} commits
-          </Accordion.Control>
-          <Accordion.Panel>
-            <TextInput
-              label="Filter"
-              placeholder="Repo name, commit message or commitId"
-              value={filter}
-              onChange={(e) => setFilterValue(e.target.value)}
-            />
-            <br />
-            <BarChart width={730} height={250} data={getCommitsByMonths()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis dataKey="commits" />
-              <Tooltip />
-              <Bar dataKey="commits" fill="#8884d8" />
-            </BarChart>
-            <Tabs defaultValue="HTML">
-              <Tabs.List>
-                <Tabs.Tab value="HTML">Html</Tabs.Tab>
-                <Tabs.Tab value="JSON">Json</Tabs.Tab>
-              </Tabs.List>
-              <Tabs.Panel value="HTML" pt="xs">
-                <ul>
-                  {reposWithCommits.map((r) => (
-                    <li key={r.name}>
-                      <RepoLink repo={r} /> ({r.defaultBranch})
-                      <ul>
-                        {r.commits.values.map((c) => (
-                          <li key={c.id}>
-                            {c.date.toISOString()}: {c.message} (
-                            <a
-                              href={`https://dev.azure.com/DigitecGalaxus/devinite/_git/${r.name}/commit/${c.id}`}
-                              target="_blank"
-                            >
-                              {c.id}
-                            </a>
-                            )
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </Tabs.Panel>
-              <Tabs.Panel value="JSON" pt="xs">
-                <Textarea
-                  minRows={20}
-                  readOnly={true}
-                  onClick={(e) => e.currentTarget.select()}
-                  value={JSON.stringify(
-                    {
-                      totalCommits: allCommits.length,
-                      repos: reposWithCommits,
-                    },
-                    null,
-                    2
-                  )}
-                ></Textarea>
-              </Tabs.Panel>
-            </Tabs>
-          </Accordion.Panel>
-        </Accordion.Item>
-        <Accordion.Item value="noCommits">
-          <Accordion.Control>
-            {reposWithoutCommits.length} repos without commits
-          </Accordion.Control>
-          <Accordion.Panel>
-            <ul>
-              {reposWithoutCommits.map((r) => (
-                <li key={r.name}>
-                  <RepoLink repo={r} />
-                </li>
-              ))}
-            </ul>
-          </Accordion.Panel>
-        </Accordion.Item>
-        <Accordion.Item value="withErrors">
-          <Accordion.Control>
-            {reposWithErrors.length} repos with errors
-          </Accordion.Control>
-          <Accordion.Panel>
-            <ul>
-              {reposWithErrors.map((r) => (
-                <Fragment key={r.name}>
-                  <li>
-                    <RepoLink repo={r} />
-                  </li>
-                  <ul>
-                    {r.commits.errors.map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                  </ul>
-                </Fragment>
-              ))}
-            </ul>
-          </Accordion.Panel>
-        </Accordion.Item>
-      </Accordion>
+      <ResultAccordion result={repoResults} />
     </Container>
   );
-
-  function applyFilter(repo: RepoResult): RepoResult | null {
-    if (!filter) {
-      return repo;
-    }
-
-    const lowerFilter = filter.toLowerCase();
-
-    if (repo.name.toLowerCase().includes(lowerFilter)) {
-      return repo;
-    }
-
-    const filteredCommits = repo.commits.values.filter(
-      (c) =>
-        c.id.includes(lowerFilter) ||
-        c.message.toLowerCase().includes(lowerFilter)
-    );
-
-    if (!filteredCommits.length) {
-      return null;
-    }
-
-    return {
-      ...repo,
-      commits: {
-        ...repo.commits,
-        values: filteredCommits,
-      },
-    };
-  }
-
-  function getCommitsByMonths() {
-    return allCommits
-      .reduce<{ month: string; commits: number }[]>(
-        (monthlyCommitNumbers, commit) => {
-          const month = `${commit.date.getUTCFullYear()}-${
-            commit.date.getUTCMonth() + 1
-          }`;
-
-          let monthlyCommitNumber = monthlyCommitNumbers.find(
-            (m) => m.month === month
-          );
-          if (!monthlyCommitNumber) {
-            monthlyCommitNumber = { month, commits: 0 };
-            monthlyCommitNumbers.push(monthlyCommitNumber);
-          }
-
-          monthlyCommitNumber.commits++;
-
-          return monthlyCommitNumbers;
-        },
-        []
-      )
-      .sort(
-        (a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()
-      );
-  }
 
   async function getCommits() {
     setIsSearching(true);
@@ -307,6 +121,192 @@ const App: FC = () => {
 
       return Promise.reject(r);
     });
+  }
+};
+
+const ResultAccordion: FC<{ result: RepoResult[] }> = ({ result }) => {
+  const [filter, setFilterValue] = useState("");
+
+  if (!result) {
+    return null;
+  }
+
+  const reposWithoutCommits = result.filter(
+    (r) => r.commits.values.length <= 0 && r.commits.errors.length <= 0
+  );
+
+  const reposWithErrors = result.filter((r) => r.commits.errors.length > 0);
+
+  const reposWithCommits = result
+    ?.filter((r) => r.commits.values.length > 0)
+    .map(applyFilter)
+    .filter((r) => !!r);
+
+  const allCommits = reposWithCommits.reduce<Commit[]>(
+    (commits, r) => [...commits, ...r.commits.values],
+    []
+  );
+
+  return (
+    <Accordion defaultValue="withCommits">
+      <Accordion.Item value="withCommits">
+        <Accordion.Control>
+          {reposWithCommits.length} repos with {allCommits.length} commits
+        </Accordion.Control>
+        <Accordion.Panel>
+          <TextInput
+            label="Filter"
+            placeholder="Repo name, commit message or commitId"
+            value={filter}
+            onChange={(e) => setFilterValue(e.target.value)}
+          />
+          <br />
+          <BarChart width={730} height={250} data={getCommitsByMonths()}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis dataKey="commits" />
+            <Tooltip />
+            <Bar dataKey="commits" fill="#8884d8" />
+          </BarChart>
+          <Tabs defaultValue="HTML">
+            <Tabs.List>
+              <Tabs.Tab value="HTML">Html</Tabs.Tab>
+              <Tabs.Tab value="JSON">Json</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="HTML" pt="xs">
+              <ul>
+                {reposWithCommits.map((r) => (
+                  <li key={r.name}>
+                    <RepoLink repo={r} /> ({r.defaultBranch})
+                    <ul>
+                      {r.commits.values.map((c) => (
+                        <li key={c.id}>
+                          {c.date.toISOString()}: {c.message} (
+                          <a
+                            href={`https://dev.azure.com/DigitecGalaxus/devinite/_git/${r.name}/commit/${c.id}`}
+                            target="_blank"
+                          >
+                            {c.id}
+                          </a>
+                          )
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </Tabs.Panel>
+            <Tabs.Panel value="JSON" pt="xs">
+              <Textarea
+                minRows={20}
+                readOnly={true}
+                onClick={(e) => e.currentTarget.select()}
+                value={JSON.stringify(
+                  {
+                    totalCommits: allCommits.length,
+                    repos: reposWithCommits,
+                  },
+                  null,
+                  2
+                )}
+              ></Textarea>
+            </Tabs.Panel>
+          </Tabs>
+        </Accordion.Panel>
+      </Accordion.Item>
+      <Accordion.Item value="noCommits">
+        <Accordion.Control>
+          {reposWithoutCommits.length} repos without commits
+        </Accordion.Control>
+        <Accordion.Panel>
+          <ul>
+            {reposWithoutCommits.map((r) => (
+              <li key={r.name}>
+                <RepoLink repo={r} />
+              </li>
+            ))}
+          </ul>
+        </Accordion.Panel>
+      </Accordion.Item>
+      <Accordion.Item value="withErrors">
+        <Accordion.Control>
+          {reposWithErrors.length} repos with errors
+        </Accordion.Control>
+        <Accordion.Panel>
+          <ul>
+            {reposWithErrors.map((r) => (
+              <Fragment key={r.name}>
+                <li>
+                  <RepoLink repo={r} />
+                </li>
+                <ul>
+                  {r.commits.errors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </Fragment>
+            ))}
+          </ul>
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion>
+  );
+
+  function applyFilter(repo: RepoResult): RepoResult {
+    if (!filter) {
+      return repo;
+    }
+
+    const lowerFilter = filter.toLowerCase();
+
+    if (repo.name.toLowerCase().includes(lowerFilter)) {
+      return repo;
+    }
+
+    const filteredCommits = repo.commits.values.filter(
+      (c) =>
+        c.id.includes(lowerFilter) ||
+        c.message.toLowerCase().includes(lowerFilter)
+    );
+
+    if (!filteredCommits.length) {
+      return null;
+    }
+
+    return {
+      ...repo,
+      commits: {
+        ...repo.commits,
+        values: filteredCommits,
+      },
+    };
+  }
+
+  function getCommitsByMonths() {
+    return allCommits
+      .reduce<{ month: string; commits: number }[]>(
+        (monthlyCommitNumbers, commit) => {
+          const month = `${commit.date.getUTCFullYear()}-${
+            commit.date.getUTCMonth() + 1
+          }`;
+
+          let monthlyCommitNumber = monthlyCommitNumbers.find(
+            (m) => m.month === month
+          );
+          if (!monthlyCommitNumber) {
+            monthlyCommitNumber = { month, commits: 0 };
+            monthlyCommitNumbers.push(monthlyCommitNumber);
+          }
+
+          monthlyCommitNumber.commits++;
+
+          return monthlyCommitNumbers;
+        },
+        []
+      )
+      .sort(
+        (a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()
+      );
   }
 };
 
