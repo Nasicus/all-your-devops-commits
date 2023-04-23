@@ -30,6 +30,7 @@ const App: FC = () => {
 
   return (
     <Container>
+      <h1>Search for all commits of an author across DG</h1>
       <PasswordInput
         placeholder="Required permissions: Code - Read"
         label="PAT"
