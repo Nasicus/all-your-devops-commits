@@ -6,7 +6,9 @@ import {
   Flex,
   Loader,
   PasswordInput,
+  Tabs,
   TextInput,
+  Textarea,
 } from "@mantine/core";
 import { FC, Fragment, useState } from "react";
 import {
@@ -90,30 +92,52 @@ const App: FC = () => {
               <XAxis dataKey="month" />
               <YAxis dataKey="commits" />
               <Tooltip />
-              <Legend />
               <Bar dataKey="commits" fill="#8884d8" />
             </BarChart>
-            <ul>
-              {reposWithCommits.map((r) => (
-                <li key={r.name}>
-                  <RepoLink repo={r} /> ({r.defaultBranch})
-                  <ul>
-                    {r.commits.values.map((c) => (
-                      <li key={c.id}>
-                        {c.date.toISOString()}: {c.message} (
-                        <a
-                          href={`https://dev.azure.com/DigitecGalaxus/devinite/_git/${r.name}/commit/${c.id}`}
-                          target="_blank"
-                        >
-                          {c.id}
-                        </a>
-                        )
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
+            <Tabs defaultValue="HTML">
+              <Tabs.List>
+                <Tabs.Tab value="HTML">Html</Tabs.Tab>
+                <Tabs.Tab value="JSON">Json</Tabs.Tab>
+              </Tabs.List>
+              <Tabs.Panel value="HTML" pt="xs">
+                <ul>
+                  {reposWithCommits.map((r) => (
+                    <li key={r.name}>
+                      <RepoLink repo={r} /> ({r.defaultBranch})
+                      <ul>
+                        {r.commits.values.map((c) => (
+                          <li key={c.id}>
+                            {c.date.toISOString()}: {c.message} (
+                            <a
+                              href={`https://dev.azure.com/DigitecGalaxus/devinite/_git/${r.name}/commit/${c.id}`}
+                              target="_blank"
+                            >
+                              {c.id}
+                            </a>
+                            )
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              </Tabs.Panel>
+              <Tabs.Panel value="JSON" pt="xs">
+                <Textarea
+                  minRows={20}
+                  readOnly={true}
+                  onClick={(e) => e.currentTarget.select()}
+                  value={JSON.stringify(
+                    {
+                      totalCommits: allCommits.length,
+                      repos: reposWithCommits,
+                    },
+                    null,
+                    2
+                  )}
+                ></Textarea>
+              </Tabs.Panel>
+            </Tabs>
           </Accordion.Panel>
         </Accordion.Item>
         <Accordion.Item value="noCommits">
