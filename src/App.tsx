@@ -9,6 +9,15 @@ import {
   TextInput,
 } from "@mantine/core";
 import { FC, Fragment, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const App: FC = () => {
   const [user, setUser] = useState("Patrick Zenhäusern");
@@ -26,6 +35,11 @@ const App: FC = () => {
 
   const reposWithErrors = repoResults.filter(
     (r) => r.commmits.errors.length > 0
+  );
+
+  const allCommits = reposWithCommits.reduce<Commit[]>(
+    (commits, r) => [...commits, ...r.commmits.values],
+    []
   );
 
   return (
@@ -71,14 +85,17 @@ const App: FC = () => {
         </Accordion.Item>
         <Accordion.Item value="withCommits">
           <Accordion.Control>
-            {reposWithCommits.length} repos with{" "}
-            {reposWithCommits.reduce(
-              (count, r) => count + r.commmits.values.length,
-              0
-            )}{" "}
-            commits
+            {reposWithCommits.length} repos with {allCommits.length} commits
           </Accordion.Control>
           <Accordion.Panel>
+            <BarChart width={730} height={250} data={getCommitsByMonths()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis dataKey="commits" />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="commits" fill="#8884d8" />
+            </BarChart>
             <ul>
               {reposWithCommits.map((r) => (
                 <li key={r.name}>
@@ -126,6 +143,33 @@ const App: FC = () => {
       </Accordion>
     </Container>
   );
+
+  function getCommitsByMonths() {
+    return allCommits
+      .reduce<{ month: string; commits: number }[]>(
+        (monthlyCommitNumbers, commit) => {
+          const month = `${commit.date.getUTCFullYear()}-${
+            commit.date.getUTCMonth() + 1
+          }`;
+
+          let monthlyCommitNumber = monthlyCommitNumbers.find(
+            (m) => m.month === month
+          );
+          if (!monthlyCommitNumber) {
+            monthlyCommitNumber = { month, commits: 0 };
+            monthlyCommitNumbers.push(monthlyCommitNumber);
+          }
+
+          monthlyCommitNumber.commits++;
+
+          return monthlyCommitNumbers;
+        },
+        []
+      )
+      .sort(
+        (a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()
+      );
+  }
 
   async function getCommits() {
     setIsSearching(true);
