@@ -56,7 +56,12 @@ const App: FC = () => {
         onChange={(e) => setUser(e.target.value)}
       />
       <Flex mt="xs" gap="xs">
-        <Button disabled={isSearching || !pat || !user} onClick={getCommits}>
+        <Button
+          disabled={
+            isSearching || !pat || !user || !organization || !projects.length
+          }
+          onClick={getCommits}
+        >
           Search
         </Button>
         {isSearching && <Loader />}
