@@ -124,79 +124,98 @@ const App: FC = () => {
     const result: RepoResult[] = [];
 
     for (const project of projects) {
-      const reposResponse = await makeDevOpsRequest(
-        project,
-        "/git/repositories?api-version=7.0"
-      );
-
-      for (const repo of reposResponse.value) {
-        const defaultBranchPaths = repo.defaultBranch?.split("/");
-        if (!defaultBranchPaths) {
-          console.warn(
-            `${repo.name} doesn't have a default branch, will skip.`
-          );
-          continue;
-        }
-
-        const defaultBranch = defaultBranchPaths[defaultBranchPaths.length - 1];
-
-        const repoResult: RepoResult = {
-          name: repo.name,
-          org: organization,
+      try {
+        const reposResponse = await makeDevOpsRequest(
           project,
-          defaultBranch,
-          commits: { errors: [], values: [] },
-        };
+          "/git/repositories?api-version=7.0"
+        );
 
-        result.push(repoResult);
-
-        const pageSize = 1000;
-        let skip = 0;
-        let commitPage: Commit[] = [];
-        while (skip === 0 || commitPage.length >= pageSize) {
-          try {
-            let commitUrl = `/git/repositories/${repo.name}/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${defaultBranch}&api-version=7.0`;
-
-            if (from) {
-              commitUrl += `&searchCriteria.fromDate=${toUtcDate(
-                from
-              ).toISOString()}`;
-            }
-
-            if (to) {
-              const utcTo = toUtcDate(to);
-              utcTo.setUTCHours(23, 59, 59, 999);
-              commitUrl += `&searchCriteria.toDate=${utcTo.toISOString()}`;
-            }
-
-            const commitsResponse = await makeDevOpsRequest(project, commitUrl);
-
-            commitPage = commitsResponse.value.map((c: any) => ({
-              id: c.commitId,
-              message: c.comment,
-              date: new Date(c.author.date),
-              fileChange: {
-                add: c.changeCounts.Add || 0,
-                edit: c.changeCounts.Edit || 0,
-                delete: c.changeCounts.Delete || 0,
-              },
-            }));
-
-            repoResult.commits.values = [
-              ...repoResult.commits.values,
-              ...commitPage,
-            ];
-            skip += pageSize;
-            setRepoResults([...result]);
-          } catch (err) {
-            const r: any = err;
-            repoResult.commits.errors.push(
-              `${r.status}: ${(await r.json())?.message}`
+        for (const repo of reposResponse.value) {
+          const defaultBranchPaths = repo.defaultBranch?.split("/");
+          if (!defaultBranchPaths) {
+            console.warn(
+              `${repo.name} doesn't have a default branch, will skip.`
             );
-            setRepoResults([...result]);
-            break;
+            continue;
+          }
+
+          const defaultBranch =
+            defaultBranchPaths[defaultBranchPaths.length - 1];
+
+          const repoResult: RepoResult = {
+            name: repo.name,
+            org: organization,
+            project,
+            defaultBranch,
+            commits: { errors: [], values: [] },
+          };
+
+          result.push(repoResult);
+
+          const pageSize = 1000;
+          let skip = 0;
+          let commitPage: Commit[] = [];
+          while (skip === 0 || commitPage.length >= pageSize) {
+            try {
+              let commitUrl = `/git/repositories/${repo.name}/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${defaultBranch}&api-version=7.0`;
+
+              if (from) {
+                commitUrl += `&searchCriteria.fromDate=${toUtcDate(
+                  from
+                ).toISOString()}`;
+              }
+
+              if (to) {
+                const utcTo = toUtcDate(to);
+                utcTo.setUTCHours(23, 59, 59, 999);
+                commitUrl += `&searchCriteria.toDate=${utcTo.toISOString()}`;
+              }
+
+              const commitsResponse = await makeDevOpsRequest(
+                project,
+                commitUrl
+              );
+
+              commitPage = commitsResponse.value.map((c: any) => ({
+                id: c.commitId,
+                message: c.comment,
+                date: new Date(c.author.date),
+                fileChange: {
+                  add: c.changeCounts.Add || 0,
+                  edit: c.changeCounts.Edit || 0,
+                  delete: c.changeCounts.Delete || 0,
+                },
+              }));
+
+              repoResult.commits.values = [
+                ...repoResult.commits.values,
+                ...commitPage,
+              ];
+              skip += pageSize;
+              setRepoResults([...result]);
+            } catch (err) {
+              const r: any = err;
+              repoResult.commits.errors.push(
+                `${r.status}: ${(await r.json())?.message}`
+              );
+              setRepoResults([...result]);
+              break;
+            }
           }
         }
+      } catch (error) {
+        const r: any = error;
+        result.push({
+          commits: {
+            values: [],
+            errors: [`${r.status}: ${(await r.json())?.message}`],
+          },
+          defaultBranch: "unknown",
+          name: "Unknown",
+          org: organization,
+          project,
+        });
+        setRepoResults([...result]);
       }
     }
 

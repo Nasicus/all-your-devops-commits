@@ -7,7 +7,7 @@ export const RepoLink: FC<{ repo: RepoResult }> = ({ repo }) => {
       href={`https://dev.azure.com/${repo.org}/${repo.project}/_git/${repo.name}`}
       target="_blank"
     >
-      {repo.name}
+      {repo.name} ({repo.project})
     </a>
   );
 };
