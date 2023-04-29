@@ -138,6 +138,11 @@ const App: FC = () => {
               id: c.commitId,
               message: c.comment,
               date: new Date(c.author.date),
+              fileChange: {
+                add: c.changeCounts.Add || 0,
+                edit: c.changeCounts.Edit || 0,
+                delete: c.changeCounts.Delete || 0,
+              },
             }));
 
             repoResult.commits.values = [
