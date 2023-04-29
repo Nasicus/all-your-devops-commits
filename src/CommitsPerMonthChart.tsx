@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 export const CommitsPerMonthChart: FC<{ commits: Commit[] }> = ({
   commits,
 }) => {
+  <h2>Commits by months</h2>;
   return (
     <BarChart width={730} height={250} data={getCommitsByMonths()}>
       <CartesianGrid strokeDasharray="3 3" />

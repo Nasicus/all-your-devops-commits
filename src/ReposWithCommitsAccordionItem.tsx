@@ -4,6 +4,7 @@ import { CommitList } from "./CommitList";
 import { CommitsPerMonthChart } from "./CommitsPerMonthChart";
 import { JsonCommitResult } from "./JsonCommitResult";
 import { Commit, RepoResult } from "./models";
+import { CommitsPerRepoChart } from "./CommitsPerRepoChart";
 
 export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
   result,
@@ -33,11 +34,11 @@ export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
           onChange={(e) => setFilterValue(e.target.value)}
         />
         <br />
-        <CommitsPerMonthChart commits={allCommits} />
         <Tabs defaultValue="HTML">
           <Tabs.List>
             <Tabs.Tab value="HTML">Html</Tabs.Tab>
             <Tabs.Tab value="JSON">Json</Tabs.Tab>
+            <Tabs.Tab value="Charts">Charts</Tabs.Tab>
           </Tabs.List>
           <Tabs.Panel value="HTML" pt="xs">
             <CommitList commits={reposWithCommits} />
@@ -47,6 +48,10 @@ export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
               totalCommits={allCommits.length}
               commits={reposWithCommits}
             />
+          </Tabs.Panel>
+          <Tabs.Panel value="Charts" pt="xs">
+            <CommitsPerMonthChart commits={allCommits} />
+            <CommitsPerRepoChart commits={reposWithCommits} />
           </Tabs.Panel>
         </Tabs>
       </Accordion.Panel>
