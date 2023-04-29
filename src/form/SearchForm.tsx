@@ -120,11 +120,16 @@ export const SearchForm: FC<{
       return null;
     }
 
-    return defaultBranchPaths[defaultBranchPaths.length - 1];
+    // remove refs/heads
+    return defaultBranchPaths.slice(2).join("/");
   }
 
   function getCommitUrl(pageSize: number, skip: number, repo: RepoResult) {
-    let commitUrl = `/git/repositories/${repo.name}/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${repo.defaultBranch}&api-version=7.0`;
+    let commitUrl = `/git/repositories/${
+      repo.name
+    }/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${encodeURIComponent(
+      repo.defaultBranch
+    )}&api-version=7.0`;
 
     if (from) {
       commitUrl += `&searchCriteria.fromDate=${toUtcDate(from).toISOString()}`;
