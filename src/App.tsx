@@ -11,6 +11,7 @@ import {
 import { FC, useState } from "react";
 import { ResultAccordion } from "./ResultAccordion";
 import { Commit, RepoResult } from "./models";
+import { DateInput } from "@mantine/dates";
 
 const App: FC = () => {
   const [organization, setOrganization] = useState(() =>
@@ -18,6 +19,8 @@ const App: FC = () => {
   );
   const [projects, setProjects] = useState(() => getProjectsFromQuery());
   const [user, setUser] = useState("");
+  const [from, setFrom] = useState<Date>();
+  const [to, setTo] = useState<Date>();
   const [pat, setPat] = useState(() => localStorage.getItem("pat") || "");
   const [storePat, setStorePat] = useState(!!pat);
   const [isSearching, setIsSearching] = useState(false);
@@ -30,31 +33,54 @@ const App: FC = () => {
         placeholder="e.g. DigitecGalaxus"
         label="Organization"
         value={organization}
+        required
         onChange={(e) => setOrganization(e.target.value)}
       />
       <Textarea
         placeholder="one line per project"
         label="Projects"
         value={projects.join("\n")}
+        required
         onChange={(e) => setProjects(e.target.value.split("\n"))}
       />
       <PasswordInput
         placeholder="Required permissions: Code - Read"
         label="PAT"
         value={pat}
+        required
         onChange={(e) => setPat(e.target.value)}
       />
       <Checkbox
         checked={storePat}
         onChange={(e) => setStorePat(e.target.checked)}
         label="Store PAT in local storage"
+        mt="xs"
       />
       <TextInput
         placeholder="e.g. Josef Müller"
         label="User to search for"
         value={user}
+        required
         onChange={(e) => setUser(e.target.value)}
       />
+      <Flex gap="xs" align="stretch" mt="xs">
+        <DateInput
+          value={from}
+          onChange={setFrom}
+          label="From"
+          allowDeselect
+          placeholder="Will be from the start of the day (00:00)"
+          w="100%"
+        />
+        <DateInput
+          value={to}
+          onChange={setTo}
+          label="To"
+          allowDeselect
+          placeholder="Will be to the end of the day (23:59)"
+          w="100%"
+        />
+      </Flex>
       <Flex mt="xs" gap="xs">
         <Button
           disabled={
@@ -129,10 +155,21 @@ const App: FC = () => {
         let commitPage: Commit[] = [];
         while (skip === 0 || commitPage.length >= pageSize) {
           try {
-            const commitsResponse = await makeDevOpsRequest(
-              project,
-              `/git/repositories/${repo.name}/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${defaultBranch}&api-version=7.0`
-            );
+            let commitUrl = `/git/repositories/${repo.name}/commits?searchCriteria.author=${user}&searchCriteria.$top=${pageSize}&searchCriteria.$skip=${skip}&searchCriteria.itemVersion.version=${defaultBranch}&api-version=7.0`;
+
+            if (from) {
+              commitUrl += `&searchCriteria.fromDate=${toUtcDate(
+                from
+              ).toISOString()}`;
+            }
+
+            if (to) {
+              const utcTo = toUtcDate(to);
+              utcTo.setUTCHours(23, 59, 59, 999);
+              commitUrl += `&searchCriteria.toDate=${utcTo.toISOString()}`;
+            }
+
+            const commitsResponse = await makeDevOpsRequest(project, commitUrl);
 
             commitPage = commitsResponse.value.map((c: any) => ({
               id: c.commitId,
@@ -182,5 +219,13 @@ const App: FC = () => {
     });
   }
 };
+
+function toUtcDate(date: Date) {
+  if (!date) {
+    return date;
+  }
+
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+}
 
 export default App;
