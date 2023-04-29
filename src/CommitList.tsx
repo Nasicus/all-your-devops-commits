@@ -9,7 +9,7 @@ export const CommitList: FC<{ commits: RepoResult[] }> = ({ commits }) => {
         <li key={r.name}>
           <RepoLink repo={r} /> ({r.defaultBranch})
           <ul>
-            {r.commits.values.map((c) => (
+            {r.commits.map((c) => (
               <li key={c.id}>
                 {c.date.toISOString()}: {c.message} (
                 <a

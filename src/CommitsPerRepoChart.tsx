@@ -22,7 +22,7 @@ export const CommitsPerRepoChart: FC<{ commits: RepoResult[] }> = ({
     return commits
       .map((r) => ({
         name: r.name,
-        commits: r.commits.values.length,
+        commits: r.commits.length,
       }))
       .sort((a, b) => b.commits - a.commits)
       .slice(0, 10);

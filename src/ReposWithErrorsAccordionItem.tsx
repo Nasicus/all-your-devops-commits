@@ -6,7 +6,7 @@ import { RepoResult } from "./models";
 export const ReposWithErrorsAccordionItem: FC<{ result: RepoResult[] }> = ({
   result,
 }) => {
-  const reposWithErrors = result.filter((r) => r.commits.errors.length > 0);
+  const reposWithErrors = result.filter((r) => r.errors.length > 0);
 
   return (
     <Accordion.Item value="withErrors">
@@ -21,7 +21,7 @@ export const ReposWithErrorsAccordionItem: FC<{ result: RepoResult[] }> = ({
                 <RepoLink repo={r} />
               </li>
               <ul>
-                {r.commits.errors.map((err, i) => (
+                {r.errors.map((err, i) => (
                   <li key={i}>{err}</li>
                 ))}
               </ul>

@@ -12,12 +12,12 @@ export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
   const [filter, setFilterValue] = useState("");
 
   const reposWithCommits = result
-    .filter((r) => r.commits.values.length > 0)
+    .filter((r) => r.commits.length > 0)
     .map(applyFilter)
     .filter((r) => !!r);
 
   const allCommits = reposWithCommits.reduce<Commit[]>(
-    (commits, r) => [...commits, ...r.commits.values],
+    (commits, r) => [...commits, ...r.commits],
     []
   );
 
@@ -83,7 +83,7 @@ export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
       return repo;
     }
 
-    const filteredCommits = repo.commits.values.filter(
+    const filteredCommits = repo.commits.filter(
       (c) =>
         c.id.includes(lowerFilter) ||
         c.message.toLowerCase().includes(lowerFilter)
@@ -95,10 +95,7 @@ export const ReposWithCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
 
     return {
       ...repo,
-      commits: {
-        ...repo.commits,
-        values: filteredCommits,
-      },
+      commits: filteredCommits,
     };
   }
 };

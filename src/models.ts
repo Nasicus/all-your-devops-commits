@@ -2,13 +2,9 @@ export interface RepoResult {
   name: string;
   org: string;
   project: string;
-  defaultBranch: string;
-  commits: CommitsResult;
-}
-
-export interface CommitsResult {
+  defaultBranch?: string;
+  commits: Commit[];
   errors: string[];
-  values: Commit[];
 }
 
 export interface Commit {

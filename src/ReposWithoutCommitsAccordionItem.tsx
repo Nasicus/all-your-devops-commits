@@ -7,7 +7,7 @@ export const ReposWithoutCommitsAccordionItem: FC<{ result: RepoResult[] }> = ({
   result,
 }) => {
   const reposWithoutCommits = result.filter(
-    (r) => r.commits.values.length <= 0 && r.commits.errors.length <= 0
+    (r) => r.commits.length <= 0 && r.errors.length <= 0
   );
 
   return (
