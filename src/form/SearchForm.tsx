@@ -1,5 +1,5 @@
 import { FC, useContext, useState } from "react";
-import { Commit, RepoResult } from "../models";
+import { Commit, RepoResult, SearchProgress } from "../models";
 import { AuthorInput } from "./AuthorInput";
 import { DateInputs } from "./DateInputs";
 import { OrganizationInput } from "./OrganizationInput";
@@ -15,6 +15,7 @@ export const SearchForm: FC<{
     useContext(SearchFormContext);
 
   const [isSearching, setIsSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState<SearchProgress>(null);
 
   return (
     <>
@@ -23,7 +24,11 @@ export const SearchForm: FC<{
       <PersonalAccessTokenInput />
       <AuthorInput />
       <DateInputs />
-      <SearchButton isSearching={isSearching} onClick={getCommits} />
+      <SearchButton
+        isSearching={isSearching}
+        onClick={getCommits}
+        searchProgress={searchProgress}
+      />
     </>
   );
 
@@ -37,6 +42,10 @@ export const SearchForm: FC<{
     }
 
     const result: RepoResult[] = [];
+    const progress: SearchProgress = {
+      projects: { total: projects.length, current: 0 },
+      repos: { total: 0, current: 0 },
+    };
 
     for (const project of projects) {
       try {
@@ -44,6 +53,9 @@ export const SearchForm: FC<{
           project,
           "/git/repositories?api-version=7.0"
         );
+
+        progress.repos.total += reposResponse.value.length;
+        setSearchProgress(progress);
 
         for (const repo of reposResponse.value) {
           const repoResult: RepoResult = {
@@ -85,12 +97,16 @@ export const SearchForm: FC<{
 
               repoResult.commits = [...repoResult.commits, ...commitPage];
               skip += pageSize;
+              progress.repos.current += 1;
+              setSearchProgress(progress);
               onRepoResultUpdate([...result]);
             } catch (err) {
               const r: any = err;
               repoResult.errors.push(
                 `${r.status}: ${(await r.json())?.message}`
               );
+              progress.repos.current += 1;
+              setSearchProgress(progress);
               onRepoResultUpdate([...result]);
               break;
             }
@@ -108,6 +124,8 @@ export const SearchForm: FC<{
         });
         onRepoResultUpdate([...result]);
       }
+      progress.projects.current += 1;
+      setSearchProgress(progress);
     }
 
     setIsSearching(false);

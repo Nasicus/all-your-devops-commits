@@ -19,3 +19,8 @@ export interface FileChange {
   delete: number;
   edit: number;
 }
+
+export interface SearchProgress {
+  projects: { current: number; total: number };
+  repos: { current: number; total: number };
+}
